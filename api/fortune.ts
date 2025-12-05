@@ -5,11 +5,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers for good measure (though same-origin is default)
   res.setHeader('Content-Type', 'application/json');
 
-  // Ensure the API Key is present
-  const apiKey = process.env.API_KEY;
+  // Ensure the API Key is present (support both variable names)
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    console.error('API_KEY missing in environment');
-    return res.status(500).json({ error: "Server configuration error: API_KEY missing" });
+    console.error('GEMINI_API_KEY missing in environment');
+    return res.status(500).json({ error: "Server configuration error: GEMINI_API_KEY missing" });
   }
 
   try {
