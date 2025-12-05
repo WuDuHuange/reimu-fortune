@@ -8,6 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Ensure the API Key is present
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
+    console.error('API_KEY missing in environment');
     return res.status(500).json({ error: "Server configuration error: API_KEY missing" });
   }
 
@@ -71,10 +72,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(jsonResponse);
 
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    return res.status(500).json({ 
-        error: "Failed to fetch fortune", 
-        details: error.message 
-    });
+    // Log full error for server-side debugging
+    console.error("Gemini API Error:", error && (error.stack || error));
+
+    // Prepare a safe response payload. In production we avoid leaking internals.
+    const details = (error && error.message) ? error.message : String(error);
+    const safeDetails = process.env.NODE_ENV === 'production' ? 'Internal server error' : details;
+
+    const payload: any = {
+      error: 'Failed to fetch fortune',
+      details: safeDetails,
+    };
+
+    // Include stack trace only in non-production environments to aid debugging
+    if (process.env.NODE_ENV !== 'production' && error && error.stack) {
+      payload.stack = error.stack;
+    }
+
+    return res.status(500).json(payload);
   }
 }

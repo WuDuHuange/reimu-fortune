@@ -1,9 +1,11 @@
 {
   "name": "reimu-fortune",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html"
+    "build": "parcel build ./index.html",
+    "vercel-build": "parcel build ./index.html"
   },
   "dependencies": {
     "@google/genai": "^1.0.0",
@@ -17,5 +19,9 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vercel/node": "^3.0.0"
+  }
+  ,
+  "engines": {
+    "node": "18.x"
   }
 }
