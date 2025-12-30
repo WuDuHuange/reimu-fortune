@@ -5,11 +5,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers for good measure (though same-origin is default)
   res.setHeader('Content-Type', 'application/json');
 
+<<<<<<< HEAD
   // Ensure the API Key is present (support both variable names)
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     console.error('GEMINI_API_KEY missing in environment');
     return res.status(500).json({ error: "Server configuration error: GEMINI_API_KEY missing" });
+=======
+  // Ensure the API Key is present
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "Server configuration error: API_KEY missing" });
+>>>>>>> main
   }
 
   try {
@@ -32,7 +39,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         systemInstruction: `你现在是东方Project中的博丽灵梦（Reimu Hakurei），博丽神社的巫女。
         你的性格直率、无忧无虑，稍微有点贪财（渴望赛钱），但在关键时刻很可靠。
         
+<<<<<<< HEAD
         请生成一个每日运势结果。
+=======
+        请生成一个每日运势结果，包含详细的幸运信息。
+>>>>>>> main
         语气要直接，符合灵梦的特点。
         如果用户提供了具体的愿望，请务必针对该愿望进行吐槽或点评。
         在评论中幽默或严肃地提到赛钱（香火钱）的重要性。
@@ -48,10 +59,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             },
             comment: {
               type: Type.STRING,
+<<<<<<< HEAD
               description: "灵梦对运势的评论（中文）。"
             }
           },
           required: ["luck", "comment"]
+=======
+              description: "神社签文风格的运势解读（中文），30-50字。"
+            },
+            luckyItem: {
+              type: Type.STRING,
+              description: "今日幸运物品，例如：红白蝴蝶结、仙贝、阴阳玉、符卡等。"
+            },
+            luckyDirection: {
+              type: Type.STRING,
+              description: "今日幸运方位，例如：东、南、西、北、东北、东南、西北、西南。"
+            },
+            luckyColor: {
+              type: Type.STRING,
+              description: "今日幸运颜色，例如：红色、白色、紫色等。"
+            },
+            luckyNumber: {
+              type: Type.NUMBER,
+              description: "今日幸运数字，1-99之间的整数。"
+            },
+            reimuComment: {
+              type: Type.STRING,
+              description: "灵梦的个人吐槽或建议（中文），用灵梦直率、稍带调侃的语气，15-30字，可以提到赛钱。"
+            }
+          },
+          required: ["luck", "comment", "luckyItem", "luckyDirection", "luckyColor", "luckyNumber", "reimuComment"]
+>>>>>>> main
         }
       }
     });
@@ -66,12 +104,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (e) {
         console.error("JSON Parse Error:", e);
         // Fallback
+<<<<<<< HEAD
         jsonResponse = { luck: "未知", comment: "（灵梦正在吃仙贝，没听清你说什么...）" + text };
+=======
+        jsonResponse = { 
+          luck: "未知", 
+          comment: "神灵的意志难以解读...",
+          luckyItem: "茶点",
+          luckyDirection: "东",
+          luckyColor: "红色",
+          luckyNumber: 7,
+          reimuComment: "（灵梦正在吃仙贝，没听清你说什么...）"
+        };
+>>>>>>> main
     }
 
     return res.status(200).json(jsonResponse);
 
   } catch (error: any) {
+<<<<<<< HEAD
     // Log full error for server-side debugging
     console.error("Gemini API Error:", error && (error.stack || error));
 
@@ -90,5 +141,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(500).json(payload);
+=======
+    console.error("Gemini API Error:", error);
+    return res.status(500).json({ 
+        error: "Failed to fetch fortune", 
+        details: error.message 
+    });
+>>>>>>> main
   }
 }
