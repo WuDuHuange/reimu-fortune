@@ -161,13 +161,8 @@ export const FortuneCard: React.FC<FortuneCardProps> = ({ fortune, query, onRese
           {/* Reimu's Comment */}
           {fortune.reimuComment && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-              <div className="flex items-start gap-2">
-                <span className="text-lg">👧</span>
-                <div>
-                  <p className="text-xs text-red-400 font-medium">灵梦说：</p>
-                  <p className="text-red-700 text-sm italic">"{fortune.reimuComment}"</p>
-                </div>
-              </div>
+              <p className="text-xs text-red-400 font-medium mb-1">灵梦说：</p>
+              <p className="text-red-700 text-sm italic">"{fortune.reimuComment}"</p>
             </div>
           )}
 
