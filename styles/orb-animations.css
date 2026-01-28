@@ -1,0 +1,187 @@
+/* 阴阳玉动效库 */
+
+/* 高速旋转 - 收到钱的喜悦 */
+@keyframes spin-happy {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.orb-spin-happy {
+  animation: spin-happy 0.4s ease-out;
+}
+
+/* Q弹果冻 - 被点击时 */
+@keyframes jelly {
+  0%, 100% { transform: scale(1, 1); }
+  25% { transform: scale(0.9, 1.1); }
+  50% { transform: scale(1.1, 0.9); }
+  75% { transform: scale(0.95, 1.05); }
+}
+
+.orb-jelly {
+  animation: jelly 0.5s ease-out;
+}
+
+/* 震动 - 震惊/生气 */
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-2px, -1px) rotate(-1deg); }
+  20% { transform: translate(2px, 1px) rotate(1deg); }
+  30% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+  40% { transform: translate(1px, -1px) rotate(0.5deg); }
+  50% { transform: translate(-2px, 1px) rotate(-1deg); }
+  60% { transform: translate(2px, -1px) rotate(1deg); }
+  70% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+  80% { transform: translate(1px, 2px) rotate(0.5deg); }
+  90% { transform: translate(-1px, 1px) rotate(-1deg); }
+}
+
+.orb-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* 剧烈震动 - 生气 */
+@keyframes shake-angry {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-4px, -2px) rotate(-2deg); }
+  20% { transform: translate(4px, 2px) rotate(2deg); }
+  30% { transform: translate(-3px, 4px) rotate(-1deg); }
+  40% { transform: translate(3px, -3px) rotate(1deg); }
+  50% { transform: translate(-4px, 2px) rotate(-2deg); }
+  60% { transform: translate(4px, -2px) rotate(2deg); }
+  70% { transform: translate(-2px, -4px) rotate(-1deg); }
+  80% { transform: translate(2px, 4px) rotate(1deg); }
+  90% { transform: translate(-3px, 2px) rotate(-2deg); }
+}
+
+.orb-shake-angry {
+  animation: shake-angry 0.3s ease-in-out infinite;
+}
+
+/* 上下浮动 - 期待/想要钱 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.orb-float {
+  animation: float 1.5s ease-in-out infinite;
+}
+
+/* 点头 - 满意 */
+@keyframes nod {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+.orb-nod {
+  animation: nod 0.4s ease-in-out;
+}
+
+/* 左右摇头 - 嫌钱少/不满 */
+@keyframes head-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.orb-head-shake {
+  animation: head-shake 0.5s ease-out;
+}
+
+/* 缓慢自转 - 待机 */
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orb-slow-spin {
+  animation: slow-spin 30s linear infinite;
+}
+
+/* 倒转 - 装傻 */
+.orb-reverse-spin {
+  animation: slow-spin 15s linear infinite reverse;
+}
+
+/* 金色发光 - 收到钱 */
+.orb-glow-gold {
+  box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.6),
+              0 0 60px 20px rgba(255, 215, 0, 0.3);
+}
+
+/* 红色发光 - 生气 */
+.orb-glow-red {
+  box-shadow: 0 0 30px 10px rgba(220, 38, 38, 0.6),
+              0 0 60px 20px rgba(220, 38, 38, 0.3);
+}
+
+/* 灰色滤镜 - 嫌钱少 */
+.orb-grayscale {
+  filter: grayscale(0.5);
+}
+
+/* 死机闪烁 */
+@keyframes glitch {
+  0%, 100% { opacity: 1; transform: translate(0); }
+  10% { opacity: 0.8; transform: translate(-2px, 1px); }
+  20% { opacity: 1; transform: translate(1px, -1px); }
+  30% { opacity: 0.9; transform: translate(-1px, 2px); }
+  40% { opacity: 1; transform: translate(2px, 1px); }
+  50% { opacity: 0.7; transform: translate(-1px, -2px); }
+  60% { opacity: 1; transform: translate(1px, 2px); }
+  70% { opacity: 0.8; transform: translate(-2px, -1px); }
+  80% { opacity: 1; transform: translate(2px, -2px); }
+  90% { opacity: 0.9; transform: translate(-1px, 1px); }
+}
+
+.orb-glitch {
+  animation: glitch 0.3s ease-in-out infinite;
+}
+
+/* 吸附效果 - 硬币靠近时 */
+@keyframes attract {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.orb-attract {
+  animation: attract 0.3s ease-out infinite;
+}
+
+/* 弹跳 - 吞币后 */
+@keyframes bounce-once {
+  0%, 100% { transform: scale(1) translateY(0); }
+  30% { transform: scale(1.1, 0.9) translateY(5px); }
+  50% { transform: scale(0.95, 1.05) translateY(-10px); }
+  70% { transform: scale(1.02, 0.98) translateY(0); }
+}
+
+.orb-bounce {
+  animation: bounce-once 0.5s ease-out;
+}
+
+/* 转身背对 - 抽到大凶 */
+@keyframes turn-away {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(180deg); }
+}
+
+.orb-turn-away {
+  animation: turn-away 0.5s ease-out forwards;
+}
+
+/* 问号气泡动画 */
+@keyframes question-pop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.question-bubble {
+  animation: question-pop 0.3s ease-out;
+}
