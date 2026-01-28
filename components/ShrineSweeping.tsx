@@ -8,6 +8,7 @@ interface Leaf {
   scale: number;
   speed: number;
   type: 'leaf' | 'dust' | 'coin';
+  emoji: string; // 固定 emoji，避免闪烁
 }
 
 interface ShrineSweeingProps {
@@ -20,6 +21,13 @@ interface ShrineSweeingProps {
 const LEAF_EMOJIS = ['🍂', '🍁', '🌿', '💨'];
 const DUST_EMOJIS = ['💫', '✨', '🌟'];
 
+// 随机选择 emoji（仅在创建时调用）
+const getRandomEmoji = (type: 'leaf' | 'dust' | 'coin'): string => {
+  if (type === 'coin') return '💰';
+  if (type === 'leaf') return LEAF_EMOJIS[Math.floor(Math.random() * LEAF_EMOJIS.length)];
+  return DUST_EMOJIS[Math.floor(Math.random() * DUST_EMOJIS.length)];
+};
+
 export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
   onSweep,
   dailyCount,
@@ -29,9 +37,12 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
   const [leaves, setLeaves] = useState<Leaf[]>([]);
   const [rewards, setRewards] = useState<{ id: number; x: number; y: number; amount: number; isCrit: boolean }[]>([]);
   const [critAnimation, setCritAnimation] = useState<{ x: number; y: number } | null>(null);
+  const [isSweepMode, setIsSweepMode] = useState(false); // 扫帚模式
+  const [sweepCooldown, setSweepCooldown] = useState(0); // 一键清扫冷却
   const containerRef = useRef<HTMLDivElement>(null);
   const leafIdRef = useRef(0);
   const rewardIdRef = useRef(0);
+  const animationRef = useRef<number | null>(null);
 
   // Spawn leaves periodically
   useEffect(() => {
@@ -41,26 +52,30 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       
-      const isCoinChance = Math.random() < 0.002; // Very rare coin
+      const isCoinChance = Math.random() < 0.005; // 0.5% 硬币概率
+      const type: 'leaf' | 'dust' | 'coin' = isCoinChance 
+        ? 'coin' 
+        : (Math.random() < 0.7 ? 'leaf' : 'dust');
       
       const newLeaf: Leaf = {
         id: leafIdRef.current++,
-        x: Math.random() * (rect.width - 40),
-        y: -40,
+        x: Math.random() * (rect.width - 60) + 30,
+        y: -50,
         rotation: Math.random() * 360,
-        scale: 0.8 + Math.random() * 0.4,
-        speed: 1 + Math.random() * 2,
-        type: isCoinChance ? 'coin' : (Math.random() < 0.7 ? 'leaf' : 'dust'),
+        scale: 0.9 + Math.random() * 0.3,
+        speed: 0.8 + Math.random() * 1.2,
+        type,
+        emoji: getRandomEmoji(type), // 创建时固定 emoji
       };
       
-      setLeaves(prev => [...prev.slice(-15), newLeaf]); // Keep max 15 leaves
+      setLeaves(prev => [...prev.slice(-20), newLeaf]);
     };
 
-    const interval = setInterval(spawnLeaf, 2000 + Math.random() * 2000);
+    const interval = setInterval(spawnLeaf, 1500 + Math.random() * 1500);
     return () => clearInterval(interval);
   }, [enabled, dailyCount, dailyLimit]);
 
-  // Animate leaves falling
+  // Animate leaves falling (优化：使用 ref 避免频繁创建)
   useEffect(() => {
     if (leaves.length === 0) return;
 
@@ -69,22 +84,34 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
         .map(leaf => ({
           ...leaf,
           y: leaf.y + leaf.speed,
-          x: leaf.x + Math.sin(leaf.y / 30) * 0.5,
-          rotation: leaf.rotation + 1,
+          x: leaf.x + Math.sin(leaf.y / 40) * 0.8,
+          rotation: leaf.rotation + 0.5,
         }))
         .filter(leaf => {
           if (!containerRef.current) return false;
-          return leaf.y < containerRef.current.getBoundingClientRect().height + 40;
+          return leaf.y < containerRef.current.getBoundingClientRect().height + 50;
         })
       );
+      animationRef.current = requestAnimationFrame(animate);
     };
 
-    const frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [leaves]);
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [leaves.length > 0]);
 
-  // Handle leaf click
-  const handleLeafClick = useCallback((leaf: Leaf, e: React.MouseEvent) => {
+  // 冷却计时器
+  useEffect(() => {
+    if (sweepCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setSweepCooldown(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [sweepCooldown]);
+
+  // Handle leaf click/tap
+  const handleLeafClick = useCallback((leaf: Leaf, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     
     const result = onSweep();
@@ -112,44 +139,113 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
     // Remove reward popup after animation
     setTimeout(() => {
       setRewards(prev => prev.filter(r => r.id !== newReward.id));
-    }, 1000);
+    }, 800);
   }, [onSweep]);
 
-  // Clean up old rewards
-  useEffect(() => {
-    const cleanup = setInterval(() => {
-      setRewards(prev => prev.slice(-10));
-    }, 5000);
-    return () => clearInterval(cleanup);
-  }, []);
+  // 扫帚模式 - 滑过清扫
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isSweepMode) return;
+    
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // 检查附近的叶子
+    setLeaves(prev => {
+      const swept: Leaf[] = [];
+      const remaining = prev.filter(leaf => {
+        const distance = Math.sqrt(Math.pow(leaf.x - x, 2) + Math.pow(leaf.y - y, 2));
+        if (distance < 50) {
+          swept.push(leaf);
+          return false;
+        }
+        return true;
+      });
+      
+      // 触发奖励
+      swept.forEach(leaf => {
+        const result = onSweep();
+        if (result) {
+          const newReward = {
+            id: rewardIdRef.current++,
+            x: leaf.x,
+            y: leaf.y,
+            amount: result.amount,
+            isCrit: result.isCrit,
+          };
+          setRewards(r => [...r, newReward]);
+          setTimeout(() => {
+            setRewards(r => r.filter(rr => rr.id !== newReward.id));
+          }, 800);
+        }
+      });
+      
+      return remaining;
+    });
+  }, [isSweepMode, onSweep]);
+
+  // 一键清扫
+  const handleBulkSweep = useCallback(() => {
+    if (sweepCooldown > 0 || leaves.length === 0) return;
+    
+    const toSweep = leaves.slice(0, 5);
+    toSweep.forEach((leaf, index) => {
+      setTimeout(() => {
+        const result = onSweep();
+        if (result) {
+          setLeaves(prev => prev.filter(l => l.id !== leaf.id));
+          const newReward = {
+            id: rewardIdRef.current++,
+            x: leaf.x,
+            y: leaf.y,
+            amount: result.amount,
+            isCrit: result.isCrit,
+          };
+          setRewards(r => [...r, newReward]);
+          setTimeout(() => {
+            setRewards(r => r.filter(rr => rr.id !== newReward.id));
+          }, 800);
+        }
+      }, index * 100);
+    });
+    
+    setSweepCooldown(10);
+  }, [leaves, sweepCooldown, onSweep]);
 
   if (!enabled) return null;
 
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none z-20 overflow-hidden"
+      className={`fixed inset-0 z-20 overflow-hidden ${isSweepMode ? 'cursor-crosshair' : 'pointer-events-none'}`}
+      onPointerMove={handlePointerMove}
+      onPointerUp={() => setIsSweepMode(false)}
+      onPointerLeave={() => setIsSweepMode(false)}
     >
       {/* Falling leaves */}
       {leaves.map(leaf => (
         <div
           key={leaf.id}
-          className="absolute cursor-pointer pointer-events-auto transition-transform hover:scale-125"
+          className={`absolute pointer-events-auto select-none ${
+            leaf.type === 'coin' ? 'animate-pulse z-30' : 'z-20'
+          }`}
           style={{
             left: leaf.x,
             top: leaf.y,
             transform: `rotate(${leaf.rotation}deg) scale(${leaf.scale})`,
+            transition: 'transform 0.1s ease-out',
           }}
           onClick={(e) => handleLeafClick(leaf, e)}
+          onTouchStart={(e) => handleLeafClick(leaf, e)}
         >
-          <span className={`text-2xl select-none ${leaf.type === 'coin' ? 'animate-pulse' : ''}`}>
-            {leaf.type === 'coin' 
-              ? '💰' 
-              : leaf.type === 'leaf'
-                ? LEAF_EMOJIS[Math.floor(Math.random() * LEAF_EMOJIS.length)]
-                : DUST_EMOJIS[Math.floor(Math.random() * DUST_EMOJIS.length)]
-            }
-          </span>
+          {/* 扩大点击区域 */}
+          <div className="relative w-12 h-12 flex items-center justify-center cursor-pointer hover:scale-150 transition-transform duration-150">
+            <span className="text-3xl drop-shadow-md">
+              {leaf.emoji}
+            </span>
+          </div>
         </div>
       ))}
 
@@ -157,8 +253,8 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
       {rewards.map(reward => (
         <div
           key={reward.id}
-          className={`absolute pointer-events-none animate-float-up ${
-            reward.isCrit ? 'text-amber-500 font-bold text-xl' : 'text-green-600 font-medium'
+          className={`absolute pointer-events-none z-40 animate-float-up font-bold ${
+            reward.isCrit ? 'text-amber-500 text-2xl' : 'text-green-600 text-lg'
           }`}
           style={{
             left: reward.x,
@@ -173,30 +269,71 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
       {/* Crit animation */}
       {critAnimation && (
         <div
-          className="absolute pointer-events-none animate-ping"
+          className="absolute pointer-events-none z-50"
           style={{
-            left: critAnimation.x - 50,
-            top: critAnimation.y - 50,
-            width: 100,
-            height: 100,
+            left: critAnimation.x - 60,
+            top: critAnimation.y - 60,
+            width: 120,
+            height: 120,
           }}
         >
-          <div className="w-full h-full rounded-full bg-amber-400/50 flex items-center justify-center">
-            <span className="text-4xl">✨</span>
+          <div className="w-full h-full rounded-full bg-amber-400/40 animate-ping flex items-center justify-center">
+            <span className="text-5xl">✨</span>
           </div>
         </div>
       )}
 
-      {/* Progress indicator */}
-      <div className="fixed bottom-4 left-4 pointer-events-auto bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg text-sm">
-        <div className="flex items-center gap-2">
-          <span>🧹</span>
-          <span className="text-gray-700">
-            扫除进度：{dailyCount}/{dailyLimit}
-          </span>
+      {/* 控制面板 */}
+      <div className="fixed bottom-4 left-4 pointer-events-auto bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3 shadow-lg border border-gray-200">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-xl">🧹</span>
+          <div>
+            <div className="text-sm font-medium text-gray-700">
+              扫除进度
+            </div>
+            <div className="text-xs text-gray-500">
+              {dailyCount}/{dailyLimit}
+            </div>
+          </div>
         </div>
-        {dailyCount >= dailyLimit && (
-          <p className="text-xs text-gray-500 mt-1">今日扫除已完成~</p>
+        
+        {/* 进度条 */}
+        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
+          <div 
+            className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-300"
+            style={{ width: `${(dailyCount / dailyLimit) * 100}%` }}
+          />
+        </div>
+
+        {dailyCount < dailyLimit ? (
+          <div className="flex gap-2">
+            {/* 扫帚模式 */}
+            <button
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                isSweepMode 
+                  ? 'bg-amber-500 text-white shadow-inner' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onPointerDown={() => setIsSweepMode(true)}
+            >
+              {isSweepMode ? '划动中...' : '🧹长按扫'}
+            </button>
+            
+            {/* 一键清扫 */}
+            <button
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                sweepCooldown > 0 || leaves.length === 0
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+              onClick={handleBulkSweep}
+              disabled={sweepCooldown > 0 || leaves.length === 0}
+            >
+              {sweepCooldown > 0 ? `${sweepCooldown}s` : `扫×${Math.min(5, leaves.length)}`}
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-green-600 font-medium">✓ 今日扫除完成~</p>
         )}
       </div>
 
@@ -204,15 +341,19 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
         @keyframes float-up {
           0% {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-20px) scale(1.2);
           }
           100% {
             opacity: 0;
-            transform: translateY(-40px);
+            transform: translateY(-50px) scale(0.8);
           }
         }
         .animate-float-up {
-          animation: float-up 1s ease-out forwards;
+          animation: float-up 0.8s ease-out forwards;
         }
       `}</style>
     </div>
