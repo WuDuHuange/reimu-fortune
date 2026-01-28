@@ -9,7 +9,7 @@ export const AudioControl: React.FC<AudioControlProps> = ({ isMuted, onToggle })
   return (
     <button
       onClick={onToggle}
-      className="fixed top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border-2 border-red-300 shadow-lg flex items-center justify-center hover:bg-red-50 transition-colors"
+      className="fixed top-4 right-44 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border-2 border-red-300 shadow-lg flex items-center justify-center hover:bg-red-50 transition-colors"
       title={isMuted ? '开启音效' : '关闭音效'}
     >
       {isMuted ? (

@@ -172,7 +172,7 @@ export const YinYangOrb = forwardRef<YinYangOrbRef, YinYangOrbProps>(({
         message={bubbleMessage}
         visible={showBubble}
         position="right"
-        autoHide={3000}
+        autoHide={5000}
         onHide={() => setShowBubble(false)}
       />
 

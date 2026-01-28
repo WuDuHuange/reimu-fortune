@@ -39,6 +39,7 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
   const [critAnimation, setCritAnimation] = useState<{ x: number; y: number } | null>(null);
   const [isSweepMode, setIsSweepMode] = useState(false); // 扫帚模式
   const [sweepCooldown, setSweepCooldown] = useState(0); // 一键清扫冷却
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null); // 扫帚光标位置
   const containerRef = useRef<HTMLDivElement>(null);
   const leafIdRef = useRef(0);
   const rewardIdRef = useRef(0);
@@ -144,20 +145,25 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
 
   // 扫帚模式 - 滑过清扫
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isSweepMode) return;
-    
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
+    // 更新光标位置（无论是否在扫帚模式）
+    if (isSweepMode) {
+      setCursorPos({ x: e.clientX, y: e.clientY });
+    }
+    
+    if (!isSweepMode) return;
+    
     // 检查附近的叶子
     setLeaves(prev => {
       const swept: Leaf[] = [];
       const remaining = prev.filter(leaf => {
         const distance = Math.sqrt(Math.pow(leaf.x - x, 2) + Math.pow(leaf.y - y, 2));
-        if (distance < 50) {
+        if (distance < 60) { // 增大清扫范围
           swept.push(leaf);
           return false;
         }
@@ -185,6 +191,25 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
       return remaining;
     });
   }, [isSweepMode, onSweep]);
+
+  // 开始扫帚模式
+  const startSweepMode = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsSweepMode(true);
+    setCursorPos({ x: e.clientX, y: e.clientY });
+    // 捕获指针，防止移到其他元素时中断
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  }, []);
+
+  // 结束扫帚模式
+  const stopSweepMode = useCallback((e?: React.PointerEvent) => {
+    setIsSweepMode(false);
+    setCursorPos(null);
+    if (e) {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    }
+  }, []);
 
   // 一键清扫
   const handleBulkSweep = useCallback(() => {
@@ -219,10 +244,10 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`fixed inset-0 z-20 overflow-hidden ${isSweepMode ? 'cursor-crosshair' : 'pointer-events-none'}`}
+      className={`fixed inset-0 overflow-hidden ${isSweepMode ? 'z-[100] cursor-none' : 'z-20 pointer-events-none'}`}
       onPointerMove={handlePointerMove}
-      onPointerUp={() => setIsSweepMode(false)}
-      onPointerLeave={() => setIsSweepMode(false)}
+      onPointerUp={stopSweepMode}
+      onPointerCancel={stopSweepMode}
     >
       {/* Falling leaves */}
       {leaves.map(leaf => (
@@ -309,14 +334,14 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
           <div className="flex gap-2">
             {/* 扫帚模式 */}
             <button
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all touch-none ${
                 isSweepMode 
-                  ? 'bg-amber-500 text-white shadow-inner' 
+                  ? 'bg-amber-500 text-white shadow-inner animate-pulse' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
-              onPointerDown={() => setIsSweepMode(true)}
+              onPointerDown={startSweepMode}
             >
-              {isSweepMode ? '划动中...' : '🧹长按扫'}
+              {isSweepMode ? '✨划动中...' : '🧹长按扫'}
             </button>
             
             {/* 一键清扫 */}
@@ -336,6 +361,33 @@ export const ShrineSweeping: React.FC<ShrineSweeingProps> = ({
           <p className="text-xs text-green-600 font-medium">✓ 今日扫除完成~</p>
         )}
       </div>
+
+      {/* 扫帚模式视觉提示 - 跟随光标的扫帚图标 */}
+      {isSweepMode && cursorPos && (
+        <div 
+          className="fixed pointer-events-none z-[101] transition-transform duration-75"
+          style={{
+            left: cursorPos.x - 30,
+            top: cursorPos.y - 30,
+          }}
+        >
+          <div className="relative">
+            {/* 扫帚图标 */}
+            <span className="text-5xl drop-shadow-lg animate-bounce" style={{ animationDuration: '0.3s' }}>🧹</span>
+            {/* 清扫范围指示器 */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border-2 border-amber-400/50 border-dashed animate-spin" style={{ animationDuration: '3s' }} />
+          </div>
+        </div>
+      )}
+
+      {/* 扫帚模式全屏遮罩提示 */}
+      {isSweepMode && (
+        <div className="fixed inset-0 bg-amber-100/10 pointer-events-none z-[99]">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-pulse">
+            🧹 扫帚模式 - 滑动清扫落叶！松开停止
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes float-up {

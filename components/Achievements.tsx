@@ -74,7 +74,7 @@ export const Achievements: React.FC<{ history: FortuneRecord[] }> = ({ history }
   ], [history]);
 
   return (
-    <div className="fixed left-4 bottom-20 z-40 bg-white/90 backdrop-blur-md border border-red-100 rounded-lg shadow-lg p-3 w-60">
+    <div className="fixed left-4 bottom-40 z-40 bg-white/90 backdrop-blur-md border border-red-100 rounded-lg shadow-lg p-3 w-60">
       <h3 className="text-sm font-bold text-red-700 mb-2">成就徽章</h3>
       <div className="space-y-2">
         {badges.map(badge => (
